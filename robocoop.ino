@@ -2,14 +2,15 @@
 
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 #include <Wire.h>
-#include "RTClib.h"
+
+#include "Calendar.h"
 
 int hourMinToMin(int in_hour, int in_minute)
 {
   return in_hour * 60 + in_minute;
 }
 
-DS1307 rtc;
+RTC_DS1307 rtc;
 
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 int lastDayDoorOpened = -1;
