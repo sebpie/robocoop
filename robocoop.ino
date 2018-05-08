@@ -16,8 +16,13 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 int lastDayDoorOpened = -1;
 int lastDayDoorClosed = -1;
 // possibilité de mettre les minutes soit avec une ligne de plus, soit en convertissant le tout en minutes (*60)
-int minuteToOpenTheDoor = hourMinToMin(,34);
+int minuteToOpenTheDoor = hourMinToMin(9,34);
 int minuteToCloseTheDoor = hourMinToMin(19,35);
+
+// Nombre de minutes apres le coucher du soleil ou il faut fermer la porte
+uint16_t offsetCloseAfterSunset = 30;
+         
+
 
 //variable controle verin
 int pinIn1 = 3;
@@ -54,8 +59,19 @@ void verinIn()
 }
 
 
+const uint8_t daysInMonth []  = { 31,28,31,30,31,30,31,31,30,31,30,31 };
 
+int dayOfTheYear(DateTime dt) {
+    int d = dt.day();
+    int m = dt.month();
+    int days = 0;
+    
+    for (uint8_t i = 1; i < m; ++i)
+        days += daysInMonth[ i - 1];
 
+    return days;
+  
+}
 
 
 void setup () {
@@ -112,6 +128,7 @@ void loop () {
       // Si la porte n'a pas encore été fermée aujourd'hui
     if (lastDayDoorClosed != now.dayOfTheWeek())
     { 
+      minuteToCloseTheDoor = sunset[dayOfTheYear(now)] + offsetCloseAfterSunset ;
       if (hourMinToMin(now.hour(), now.minute()) >= minuteToCloseTheDoor)
       {
         Serial.println("Fermeture");
