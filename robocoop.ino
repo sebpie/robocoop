@@ -167,15 +167,23 @@ void cmdVersion(char*tokens, Stream& serial) {
 
 void cmdSunset(char*tokens, Stream& serial) {
   serial.println(_NOT_IMPLEMENTED);
-  }
+}
 
 void cmdOffset(char*tokens, Stream& serial) {
-  serial.println(_NOT_IMPLEMENTED);
+  char *token = strtok(NULL, " ");
+
+  if(NULL == token) { /* Get command */ 
+      serial.print(_OK);
+      serial.println(offsetCloseAfterSunset);
+  } else {
+    offsetCloseAfterSunset = atoi(token);
+      serial.println(_OK);
+    
+  }
 }
 
 void cmdOpenTime(char*tokens, Stream& serial) {
- //serial.println(_NOT_IMPLEMENTED);
-  verin_deactivate();
+ serial.println(_NOT_IMPLEMENTED);
 }
 
 void cmdDoor(char*tokens, Stream& serial) {
@@ -224,12 +232,9 @@ void cmdDate(char*tokens, Stream& serial) {
     sprintf(buffer, "OK: %d %d %d  %d %d %d", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
     serial.println(buffer);
     return;    
-  } else { /* Set command */ 
-    DEBUG(F("DEBUG: SET DATE"));
-    
+  } else { /* Set command */     
     do {
       int arg = atoi(token);
-      Serial.print("token: "); Serial.println(token);
       
       switch(argc) {
         case  0: YYYY = arg; DEBUG(YYYY); break;
@@ -250,11 +255,10 @@ void cmdDate(char*tokens, Stream& serial) {
       serial.println(F("ERROR: bad parameters"));
       return;
     }
-    
+
     rtc.adjust(DateTime(YYYY, MM, DD, HH, mm, SS));
     serial.println(_OK);
   }
-  
 }
 
 void cmdOpen(char*tokens, Stream& serial) {
@@ -387,10 +391,10 @@ void loop () {
       // Si la porte n'a pas encore été fermée aujourd'hui
     if (lastDayDoorClosed != now.dayOfTheWeek())
     { 
-      minuteToCloseTheDoor = sunset[dayOfTheYear(now)] + offsetCloseAfterSunset ;
+      minuteToCloseTheDoor = getSunsetTime(now)+ offsetCloseAfterSunset ;
       if (hourMinToMin(now.hour(), now.minute()) >= minuteToCloseTheDoor)
       {
-        Serial.println("Fermeture");
+//        Serial.println("Fermeture");
         //commande fermeture vérin
 //        verinIn();
         verin(VERIN_IN | VERIN_ACTIVATE);
@@ -398,5 +402,18 @@ void loop () {
       }
     }
 
+
+}
+
+
+
+
+uint16_t getSunsetTime(void) {
+    DateTime now = rtc.now();
+    return getSunsetTime();
+}
+
+uint16_t getSunsetTime(DateTime &now) {
+  return sunset[dayOfTheYear(now)] ;
 
 }
