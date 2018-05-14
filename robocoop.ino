@@ -124,7 +124,6 @@ void setup_verin() {
   pinMode(PIN_VERIN_EN,   OUTPUT);
 
   verin(VERIN_IN | VERIN_STOP );
-  
 }
 
 
@@ -182,7 +181,7 @@ void cmdOffset(char*tokens, Stream& serial) {
       serial.println(offsetCloseAfterSunset);
   } else {
     offsetCloseAfterSunset = atoi(token);
-    EEPROM.put(offsetCloseAfterSunset, EE_SUNSET_OFFSET);
+    EEPROM.update(EE_SUNSET_OFFSET, offsetCloseAfterSunset);
     serial.println(_OK);
     
   }
@@ -410,11 +409,7 @@ void loop () {
         lastDayDoorClosed = now.dayOfTheWeek();
       }
     }
-
-
 }
-
-
 
 
 uint16_t getSunsetTime(void) {
@@ -423,6 +418,5 @@ uint16_t getSunsetTime(void) {
 }
 
 uint16_t getSunsetTime(DateTime &now) {
-  return sunset[dayOfTheYear(now)] ;
-
+  return pgm_read_word_near(sunset + dayOfTheYear(now) );
 }
