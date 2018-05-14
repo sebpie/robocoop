@@ -82,26 +82,8 @@ int pinIn2 = PIN_VERIN_DIR2;
 #define VERIN_ACTIVATE      0x20  /* 0010 0000  */
 
 
-/*#define VERIN_IN    0
-#define VERIN_OUT   1
-*/
 uint32_t  verin_timer = 0;
 boolean   verin_active = false;
-
-/*
-void verin_direction(uint8_t dir) {
-  switch(dir) {
-    case VERIN_IN:
-        digitalWrite(PIN_VERIN_DIR1, LOW);
-        digitalWrite(PIN_VERIN_DIR2, HIGH);
-        break;
-    
-    case VERIN_OUT:
-        digitalWrite(PIN_VERIN_DIR1, HIGH);
-        digitalWrite(PIN_VERIN_DIR2, LOW);
-        break;
-  }
-}*/
 
 
 void verin(uint8_t bits) {
@@ -140,40 +122,7 @@ void setup_verin() {
   
 }
 
-/*
-//fonction controle verin
-void verinStop()
-{
-  // Verin stop
-  digitalWrite(pinIn1, LOW);
-  digitalWrite(pinIn2, LOW);
-}
 
-void verinOut()
-{
-  // Verin sort
-  digitalWrite(pinIn1, HIGH);
-  //si variation vitesse entre 0 et 255
-  //analogWrite(pinIn1, 255);
-  digitalWrite(pinIn2, LOW);
-
-    
-  delay (VERIN_DELAY);
-  verinStop();
-}
-
-void verinIn()
-{ 
-  // Verin rentre
-  digitalWrite(pinIn1, LOW);
-  digitalWrite(pinIn2, HIGH);
-  //si variation vitesse entre 0 et 255
-  //analogWrite(pinIn2, 255);
-  delay (VERIN_DELAY);
-  verinStop();
-}
-
-*/
 
 
 /***************************************************************************************/
