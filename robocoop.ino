@@ -186,22 +186,6 @@ void cmdDoor(char*tokens, Stream& serial) {
   }
 
   switch(atoi(token)) {
-/*    case 0:
-        verin_direction(VERIN_IN);
-        verin_activate();
-        
-        serial.println(_OK);
-        break;
-    case 1: 
-        verin_direction(VERIN_OUT);
-        verin_activate();
-        serial.println(_OK);
-        break;
-    case 2:
-        verin_deactivate();
-        serial.println(_OK);
-        break;
-*/
     case 0:
         verin(VERIN_IN | VERIN_ACTIVATE);
         
@@ -275,18 +259,12 @@ void cmdDate(char*tokens, Stream& serial) {
 
 void cmdOpen(char*tokens, Stream& serial) {
   verin(VERIN_OUT | VERIN_ACTIVATE );
-  /*
-  verin_direction(VERIN_OUT);
-  verin_activate();
-  */
   
   serial.println(_OK);
 }
 
 void cmdClose(char*tokens, Stream& serial) {
   verin(VERIN_IN | VERIN_ACTIVATE) ;
-  /*verin_direction(VERIN_IN);
-  verin_activate(); */
   serial.println(_OK);
 }
 
