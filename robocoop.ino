@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include "pins.h"
 
 #define DEBUG(x)  Serial.println(x)
@@ -24,7 +25,9 @@ uint16_t minuteToOpenTheDoor = hourMinToMin(9,34);
 uint16_t minuteToCloseTheDoor = hourMinToMin(19,35);
 
 // Nombre de minutes apres le coucher du soleil ou il faut fermer la porte
-uint16_t offsetCloseAfterSunset = 30;
+uint16_t offsetCloseAfterSunset;
+#define EE_SUNSET_OFFSET  0x00  /* Address in EEPROM where to save teh offset */
+
 
 void setup_RTC() {
   /* using A2 and A3 as GND/VCC for the RTC module */
@@ -47,6 +50,8 @@ void setup_RTC() {
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
   }
+
+
 }
 
 
@@ -177,7 +182,8 @@ void cmdOffset(char*tokens, Stream& serial) {
       serial.println(offsetCloseAfterSunset);
   } else {
     offsetCloseAfterSunset = atoi(token);
-      serial.println(_OK);
+    EEPROM.put(offsetCloseAfterSunset, EE_SUNSET_OFFSET);
+    serial.println(_OK);
     
   }
 }
@@ -356,6 +362,9 @@ void setup () {
   setup_RTC();
   setup_verin();
 
+
+  offsetCloseAfterSunset = EEPROM.get(EE_SUNSET_OFFSET, offsetCloseAfterSunset);
+  Serial.print("offset: "); Serial.println(offsetCloseAfterSunset );
 }
 
 
