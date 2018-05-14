@@ -72,14 +72,9 @@ int pinIn1 = PIN_VERIN_DIR1;
 int pinIn2 = PIN_VERIN_DIR2;
 
 #define VERIN_DELAY     5000
-#define DUTYCYCLE_FULL  0xFF
-#define DUTYCYCLE_25    0x3F    /* 25% duty cycle */
-#define DUTYCYCLE_0     0x00    /*  0% duty cycle */
-
-#define MASK_SET_DIRECTION  0x02  /* 0000 0010  */
-#define MASK_SET_ACTIVATION 0x80  /* 1000 0000  */
-#define MASK_DIRECTION      0x01  /* 0000 0001  */
-#define MASK_ACTIVATION     0x10  /* 0001 0000  */
+#define DUTYCYCLE_FULL  0xFF    /* 100% duty cycle */
+#define DUTYCYCLE_25    0x3F    /*  25% duty cycle */
+#define DUTYCYCLE_0     0x00    /*   0% duty cycle */
 
 #define VERIN_IN            0x01  /* 0000 0001  */
 #define VERIN_OUT           0x02  /* 0000 0010  */
