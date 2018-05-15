@@ -20,13 +20,13 @@ RTC_DS1307 rtc;
 char *daysOfTheWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 uint8_t lastDayDoorOpened = -1;
 uint8_t lastDayDoorClosed = -1;
-// possibilité de mettre les minutes soit avec une ligne de plus, soit en convertissant le tout en minutes (*60)
-uint16_t minuteToOpenTheDoor = hourMinToMin(9,34);
-uint16_t minuteToCloseTheDoor = hourMinToMin(19,35);
 
-// Nombre de minutes apres le coucher du soleil ou il faut fermer la porte
-//uint16_t offsetCloseAfterSunset;
-#define EE_SUNSET_OFFSET  (uint16_t) 0x00  /* Address in EEPROM where to save teh offset */
+
+// Adresse dans la NVRAM du DS1307 des parametres d'heure d'ouverture et de fermeture
+#define NVRAM_ADDR_OFFSET       (uint16_t) 0x00             // Adresse du nombre de minutes apres le coucher du soleil ou il faut fermer la porte
+#define NVRAM_ADDR_OPEN_HOUR    NVRAM_ADDR_OFFSET + 2       // Adresse de l'heure de l'heure d'ouverture
+#define NVRAM_ADDR_OPEN_MIN     NVRAM_ADDR_OPEN_HOUR + 1    // Adresse des minutes de l'heure d'ouverture
+
 
 
 void setup_RTC() {
@@ -105,7 +105,7 @@ void verin(uint8_t bits) {
           verin_activate();
       else if((bits & VERIN_STOP) == VERIN_STOP)
           verin_deactivate();
-} 
+}
       
 void verin_activate() {
   analogWrite(PIN_VERIN_EN, DUTYCYCLE_FULL);
@@ -212,8 +212,23 @@ void cmdOffset(char*tokens, Stream& serial) {
 }
 
 void cmdOpenTime(char*tokens, Stream& serial) {
- serial.print(_OK);
- serial.println( minuteToOpenTheDoor);
+ char *token = strtok(NULL, " ");
+
+  if(NULL == token) { /* GET command */
+      serial.print(_OK);
+      serial.print(getOpenHour());
+      serial.print(F(" "));
+      serial.println(getOpenMin());
+  } else {    /* SET command */
+    setOpenHour((uint8_t) atoi(token));
+    token = strtok(NULL, " ");
+    if(NULL == token) {
+      serial.println(_BAD_PARAMS);
+      return;
+    }
+    setOpenMin((uint8_t) atoi(token));
+    serial.println(_OK);
+  }
 }
 
 void cmdDoor(char*tokens, Stream& serial) {
@@ -266,12 +281,12 @@ void cmdDate(char*tokens, Stream& serial) {
       int arg = atoi(token);
       
       switch(argc) {
-        case  0: YYYY = arg; DEBUG(YYYY); break;
-        case  1: MM = arg; DEBUG(MM); break;
-        case  2: DD = arg; DEBUG(DD); break;
-        case  3: HH = arg; DEBUG(HH); break;
-        case  4: mm = arg; DEBUG(mm); break;
-        case  5: SS = arg; DEBUG(SS); break;
+        case  0: YYYY = arg; /* DEBUG(YYYY); */ break;
+        case  1: MM = arg; /* DEBUG(MM); */ break;
+        case  2: DD = arg; /* DEBUG(DD); */ break;
+        case  3: HH = arg; /* DEBUG(HH); */ break;
+        case  4: mm = arg; /* DEBUG(mm); */ break;
+        case  5: SS = arg; /* DEBUG(SS); */ break;
         default:
           DEBUG(F("Unknown value")); DEBUG(argc);
           break;
@@ -298,6 +313,7 @@ void cmdOpen(char*tokens, Stream& serial) {
 
 void cmdClose(char*tokens, Stream& serial) {
   verin(VERIN_IN | VERIN_ACTIVATE) ;
+
   serial.println(_OK);
 }
 
@@ -373,7 +389,7 @@ void setup_cli() {
 /* setup                                                                              */
 
 void setup () {
-  while (!Serial); // for Leonardo/Micro/Zero
+//  while (!Serial); // for Leonardo/Micro/Zero
 
   Serial.begin(115200);
 
@@ -406,7 +422,7 @@ void loop () {
     // Si la porte n'a pas encore été ouverte aujourd'hui
     if (lastDayDoorOpened != now.dayOfTheWeek())
     { 
-      if (hourMinToMin(now.hour(), now.minute()) >= minuteToOpenTheDoor)
+      if (hourMinToMin(now.hour(), now.minute()) >= hourMinToMin(getOpenHour(), getOpenMin()))
       {
         Serial.println(F("Ouverture"));
         //commande ouverture vérin
@@ -419,7 +435,7 @@ void loop () {
       // Si la porte n'a pas encore été fermée aujourd'hui
     if (lastDayDoorClosed != now.dayOfTheWeek())
     { 
-      minuteToCloseTheDoor = getSunsetTime(now)+ getOffsetCloseAfterSunset() ;
+      uint16_t minuteToCloseTheDoor = getSunsetTime(now)+ getOffsetCloseAfterSunset() ;
       if (hourMinToMin(now.hour(), now.minute()) >= minuteToCloseTheDoor)
       {
         verin(VERIN_IN | VERIN_ACTIVATE);
@@ -445,13 +461,30 @@ uint16_t getSunsetTime(uint16_t day) {
 
 
 void setOffsetCloseAfterSunset(uint16_t offset) {
-  rtc.writenvram(EE_SUNSET_OFFSET, (uint8_t*) &offset, (uint8_t) sizeof(offset));
+  rtc.writenvram(NVRAM_ADDR_OFFSET, (uint8_t*) &offset, (uint8_t) sizeof(offset));
 
 }
 
 uint16_t getOffsetCloseAfterSunset(void) {
     uint16_t offset;
-    rtc.readnvram((uint8_t*) &offset, (uint8_t) sizeof(offset), EE_SUNSET_OFFSET);
+    rtc.readnvram((uint8_t*) &offset, (uint8_t) sizeof(offset), NVRAM_ADDR_OFFSET);
     return offset;
+}
+
+
+uint8_t getOpenHour() {
+    return    rtc.readnvram(NVRAM_ADDR_OPEN_HOUR);
+}
+
+void setOpenHour(uint8_t h) {
+    rtc.writenvram(NVRAM_ADDR_OPEN_HOUR, h);
+}
+
+uint8_t getOpenMin() {
+    return    rtc.readnvram(NVRAM_ADDR_OPEN_MIN);
+}
+
+void setOpenMin(uint8_t m) {
+    rtc.writenvram(NVRAM_ADDR_OPEN_MIN, m);
 }
 
