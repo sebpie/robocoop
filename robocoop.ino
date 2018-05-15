@@ -196,7 +196,22 @@ void cmdSunset(char*tokens, Stream& serial) {
   }
   serial.print(_OK);
   serial.print(": ");
-  serial.println(sunset);
+  uint8_t h, m;
+  minToHourMin(sunset, &h, &m);
+  serial.print(h);
+  serial.print(' ');
+  serial.println(m);
+  
+}
+
+void minToHourMin(uint16_t minutes, uint8_t *h, uint8_t *m) {
+  uint8_t tmp=0;
+  while(minutes >= 60) {
+      tmp++;
+      minutes -= 60;
+  }
+  *h = tmp;
+  *m = minutes;
 }
 
 void cmdOffset(char*tokens, Stream& serial) {
@@ -428,7 +443,7 @@ void loop () {
         //commande ouverture vérin
         verin(VERIN_OUT | VERIN_ACTIVATE);
         lastDayDoorOpened = now.dayOfTheWeek();
-        Serial.println(lastDayDoorOpened, DEC);
+//        Serial.println(lastDayDoorOpened, DEC);
       }
     }
 
@@ -478,6 +493,7 @@ uint8_t getOpenHour() {
 
 void setOpenHour(uint8_t h) {
     rtc.writenvram(NVRAM_ADDR_OPEN_HOUR, h);
+    lastDayDoorOpened = -1;
 }
 
 uint8_t getOpenMin() {
@@ -486,5 +502,6 @@ uint8_t getOpenMin() {
 
 void setOpenMin(uint8_t m) {
     rtc.writenvram(NVRAM_ADDR_OPEN_MIN, m);
+    lastDayDoorOpened = -1;
 }
 
