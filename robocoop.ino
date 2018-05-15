@@ -25,8 +25,8 @@ uint16_t minuteToOpenTheDoor = hourMinToMin(9,34);
 uint16_t minuteToCloseTheDoor = hourMinToMin(19,35);
 
 // Nombre de minutes apres le coucher du soleil ou il faut fermer la porte
-uint16_t offsetCloseAfterSunset;
-#define EE_SUNSET_OFFSET  0x00  /* Address in EEPROM where to save teh offset */
+//uint16_t offsetCloseAfterSunset;
+#define EE_SUNSET_OFFSET  (uint16_t) 0x00  /* Address in EEPROM where to save teh offset */
 
 
 void setup_RTC() {
@@ -141,8 +141,8 @@ void setup_verin() {
 
 #if 0
 const char* strVersion = "0.1";
-const char* _OK = "OK";
-const char* _ERR = "ERR";
+const char* _OK = "OK ";
+const char* _ERR = "ERROR ";
 const char* _NOT_IMPLEMENTED = "NOT IMPLEMENTED";
 #else
 #define strVersion        F("0.1")
@@ -170,25 +170,50 @@ void cmdVersion(char*tokens, Stream& serial) {
 }
 
 void cmdSunset(char*tokens, Stream& serial) {
-  serial.println(_NOT_IMPLEMENTED);
+  char *token = strtok(NULL, " ");
+  uint16_t sunset =0;
+  if(token == NULL) { /* TODAY */
+    sunset = getSunsetTime();
+  } else { /* Get date as parameter */
+      uint16_t params[] = {0, 0};
+      uint16_t day = 0;
+
+      params[0] = atoi(token);
+      if(NULL != (token = strtok(NULL, " "))) { /* Two parameters: month and day*/
+         params[1]= atoi(token);
+         day = params[1];
+         for(int i=0; i < params[0]; i++) {
+            day += daysInMonth[i];
+         }
+      } else { /* One parameter only: day of the year */
+        day = params[0];
+        if(day < 1 || day > 366) {
+          serial.println(_BAD_PARAMS);
+          return;
+        }
+      }
+      sunset = getSunsetTime(day);
+  }
+  serial.print(_OK);
+  serial.print(": ");
+  serial.println(sunset);
 }
 
 void cmdOffset(char*tokens, Stream& serial) {
   char *token = strtok(NULL, " ");
 
-  if(NULL == token) { /* Get command */ 
+  if(NULL == token) { /* GET command */
       serial.print(_OK);
-      serial.println(offsetCloseAfterSunset);
-  } else {
-    offsetCloseAfterSunset = atoi(token);
-    EEPROM.update(EE_SUNSET_OFFSET, offsetCloseAfterSunset);
+      serial.println(getOffsetCloseAfterSunset());
+  } else {    /* SET command */
+    setOffsetCloseAfterSunset(atoi(token));
     serial.println(_OK);
-    
   }
 }
 
 void cmdOpenTime(char*tokens, Stream& serial) {
- serial.println(_NOT_IMPLEMENTED);
+ serial.print(_OK);
+ serial.println( minuteToOpenTheDoor);
 }
 
 void cmdDoor(char*tokens, Stream& serial) {
@@ -216,7 +241,6 @@ void cmdDoor(char*tokens, Stream& serial) {
       serial.println(_BAD_PARAMS);
       break;
   }
-    
 }
 
 void cmdDate(char*tokens, Stream& serial) {
@@ -361,9 +385,6 @@ void setup () {
   setup_RTC();
   setup_verin();
 
-
-  offsetCloseAfterSunset = EEPROM.get(EE_SUNSET_OFFSET, offsetCloseAfterSunset);
-  Serial.print("offset: "); Serial.println(offsetCloseAfterSunset );
 }
 
 
@@ -372,7 +393,7 @@ void setup () {
 
 void loop () {
   usb_cli.update();
- #ifdef BLUETOOTH
+#ifdef BLUETOOTH
   bt_cli.update();
 #endif /* BLUETOOTH */
 
@@ -390,7 +411,6 @@ void loop () {
         Serial.println(F("Ouverture"));
         //commande ouverture vérin
         verin(VERIN_OUT | VERIN_ACTIVATE);
-//        verinOut();
         lastDayDoorOpened = now.dayOfTheWeek();
         Serial.println(lastDayDoorOpened, DEC);
       }
@@ -399,12 +419,9 @@ void loop () {
       // Si la porte n'a pas encore été fermée aujourd'hui
     if (lastDayDoorClosed != now.dayOfTheWeek())
     { 
-      minuteToCloseTheDoor = getSunsetTime(now)+ offsetCloseAfterSunset ;
+      minuteToCloseTheDoor = getSunsetTime(now)+ getOffsetCloseAfterSunset() ;
       if (hourMinToMin(now.hour(), now.minute()) >= minuteToCloseTheDoor)
       {
-//        Serial.println("Fermeture");
-        //commande fermeture vérin
-//        verinIn();
         verin(VERIN_IN | VERIN_ACTIVATE);
         lastDayDoorClosed = now.dayOfTheWeek();
       }
@@ -414,9 +431,27 @@ void loop () {
 
 uint16_t getSunsetTime(void) {
     DateTime now = rtc.now();
-    return getSunsetTime();
+    return getSunsetTime(now);
 }
 
 uint16_t getSunsetTime(DateTime &now) {
   return pgm_read_word_near(sunset + dayOfTheYear(now) );
 }
+
+
+uint16_t getSunsetTime(uint16_t day) {
+  return pgm_read_word_near(sunset + day -1 );
+}
+
+
+void setOffsetCloseAfterSunset(uint16_t offset) {
+  rtc.writenvram(EE_SUNSET_OFFSET, (uint8_t*) &offset, (uint8_t) sizeof(offset));
+
+}
+
+uint16_t getOffsetCloseAfterSunset(void) {
+    uint16_t offset;
+    rtc.readnvram((uint8_t*) &offset, (uint8_t) sizeof(offset), EE_SUNSET_OFFSET);
+    return offset;
+}
+
