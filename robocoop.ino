@@ -145,7 +145,7 @@ const char* _OK = "OK ";
 const char* _ERR = "ERROR ";
 const char* _NOT_IMPLEMENTED = "NOT IMPLEMENTED";
 #else
-#define strVersion        F("0.1")
+#define strVersion        F("0.2-dev")
 #define _OK               F("OK")
 #define _ERR              F("ERROR")
 #define _NOT_IMPLEMENTED  F("NOT IMPLEMENTED")
