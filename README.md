@@ -4,6 +4,9 @@ Arduino project to automatically close the door of the chicken coop at given tim
 
 
 ## Commandes USB
+Parametres de connection:
+- baudrate: 	115200
+- line ending: 	CR+NL
 
 ### version
 Renvoie la version du programme. (v 0.1 deployee le 15 mai).
@@ -24,18 +27,25 @@ Avec un parametre, delais en minutes (0-15000), change la valeur du delai.
 Sans parametre, renvois la date et heure courante de la puce DS1307, au fuseau GMT (pas d'heure d'ete/hiver).
 
 Avec les parametres YYYY MM DD HH mm SS, change la date et heure.
-
+Example:
+```
+date 2018 05 15  14 55 00
+```
 
 ### opentime
 Sans parametres, renvoie l'heure d'ouverture de la porte.
 
 Avec les parametre HH MM, change l'heure d'ouverture de la porte.
+Example, pour que la porte s'ouvre a 8h00 GMT (10h Thiefosse):
+```
+opentime 8 00
+```
 
 ### open
 Ouvre la porte.
 
 ### close 
-ferme la porte.
+Ferme la porte.
 
 ### Help
 Renvoie la liste des commandes.
