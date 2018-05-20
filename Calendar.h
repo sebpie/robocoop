@@ -1,3 +1,11 @@
+/* 
+ * Sunset times from NOAA_Solar_Calculations_year 
+ * URL=https://www.esrl.noaa.gov/gmd/grad/solcalc/calcdetails.html
+ * timezone=0 (UTC, no DST)
+ * lat=47.971167
+ * lon= 6.754501 
+ */
+
 const PROGMEM uint16_t sunset[] = { 950, 951, 952, 953, 954, 956, 957, 958, 959, 960, 962, 963,
     964, 966, 967, 968, 970, 971, 973, 974, 976, 977, 979, 980, 982, 983, 985,
     986, 988, 989, 991, 993, 994, 996, 997, 999, 1001, 1002, 1004, 1005, 1007,
