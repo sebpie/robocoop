@@ -404,7 +404,10 @@ void setup_cli() {
 /* setup                                                                              */
 
 void setup () {
-//  while (!Serial); // for Leonardo/Micro/Zero
+
+#if defined(ARDUINO_AVR_LEONARDO) || defined(ARDUINO_AVR_LEONARDO_ETH) || defined(ARDUINO_AVR_MICRO)
+  while (!Serial); // for Leonardo/Micro/Zero
+#endif
 
   Serial.begin(115200);
 
