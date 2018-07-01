@@ -22,6 +22,10 @@ uint8_t lastDayDoorOpened = -1;
 uint8_t lastDayDoorClosed = -1;
 
 
+#define LOG_SIZE  10
+DateTime log_verin[LOG_SIZE];
+
+
 // Adresse dans la NVRAM du DS1307 des parametres d'heure d'ouverture et de fermeture
 #define NVRAM_ADDR_OFFSET       (uint16_t) 0x00             // Adresse du nombre de minutes apres le coucher du soleil ou il faut fermer la porte
 #define NVRAM_ADDR_OPEN_HOUR    NVRAM_ADDR_OFFSET + 2       // Adresse de l'heure de l'heure d'ouverture
@@ -111,11 +115,15 @@ void verin_activate() {
   analogWrite(PIN_VERIN_EN, DUTYCYCLE_FULL);
   verin_active  = true;
   verin_timer   = rtc.now().unixtime() + VERIN_DELAY;
+
+  log_add();
 }
 
 void verin_deactivate() {
   analogWrite(PIN_VERIN_EN, DUTYCYCLE_0);
   verin_active = false;
+ 
+  log_add();
  }
 
 void setup_verin() {
@@ -323,7 +331,7 @@ void cmdDate(char*tokens, Stream& serial) {
 
 void cmdOpen(char*tokens, Stream& serial) {
   verin(VERIN_OUT | VERIN_ACTIVATE );
-  
+
   serial.println(_OK);
 }
 
@@ -334,7 +342,14 @@ void cmdClose(char*tokens, Stream& serial) {
 
   serial.println(_OK);
 }
+void cmdLog(char*tokens, Stream& serial) {  
+  for(int i=0; i < LOG_SIZE; i++) {
 
+    sprintf(buffer, "LOG[%d]: %d %d %d  %d %d %d", i, log_verin[i].year(), log_verin[i].month(), log_verin[i].day(), log_verin[i].hour(), log_verin[i].minute(), log_verin[i].second());
+    serial.println(buffer);
+
+  }
+}
 
 void cmdHelp(char*tokens, Stream& serial) {  
   serial.println(F("Commands:"));
@@ -366,10 +381,11 @@ void setup_cli() {
   usb_cli.add("offset",   &cmdOffset);
   usb_cli.add("opentime", &cmdOpenTime);
   usb_cli.add("date",     &cmdDate);
-  usb_cli.add("door",     &cmdDoor);
   usb_cli.add("open",     &cmdOpen);
   usb_cli.add("close",    &cmdClose);
+  usb_cli.add("log",      &cmdLog);
   usb_cli.add("help",     &cmdHelp);
+  usb_cli.add("door",     &cmdDoor);
 
   
 #ifdef BLUETOOTH
@@ -414,6 +430,31 @@ void setup () {
 #endif
   setup_verin();
 
+  setup_log();
+
+}
+
+void setup_log() {
+  for(int i=0; i < LOG_SIZE; i++) {
+    log_add();
+  }
+}
+
+void log_add() {
+    DateTime now = rtc.now();
+/*    log_entry_t l;
+    l.action = a;
+    l.dt = now;
+*/
+    log_shift();
+    log_verin[0] = now;
+    
+}
+
+void log_shift() {
+  for(int i = (LOG_SIZE -1) ; i >0; i--) {
+    log_verin[i] = log_verin[i-1];
+  }
 }
 
 
