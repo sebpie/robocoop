@@ -1,8 +1,8 @@
-#include <EEPROM.h>
 #include "pins.h"
 
 #define DEBUG(x)  Serial.println(x)
-//#define BLUETOOTH
+#define BLUETOOTH
+#define RTC_ENABLED
 
 /***************************************************************************************/
 /* RTC and timing declarations                                                         */
@@ -106,7 +106,7 @@ void verin(uint8_t bits) {
       else if((bits & VERIN_STOP) == VERIN_STOP)
           verin_deactivate();
 }
-      
+
 void verin_activate() {
   analogWrite(PIN_VERIN_EN, DUTYCYCLE_FULL);
   verin_active  = true;
@@ -131,12 +131,11 @@ void setup_verin() {
 
 /***************************************************************************************/
 /* Bluetooth & CLI declarations                                                        */
-
 #include <CommandLine.h>
 #include <SoftwareSerial.h>
 
 #ifdef BLUETOOTH
-#define BT_BAUDRATE 9600
+#define BT_BAUDRATE 115200
 #endif /* BLUETOOTH */
 
 #if 0
@@ -164,8 +163,10 @@ CommandLine bt_cli(btSerial, "> ");
 
 
 void cmdVersion(char*tokens, Stream& serial) {
-  sprintf(buffer, "%s: %s\n\r", _OK, strVersion);
-  serial.println(buffer);
+//  sprintf(buffer, "%s: %s\n\r", _OK, strVersion);
+  
+  serial.print(_OK);
+  serial.println(strVersion);
   
 }
 
@@ -327,44 +328,36 @@ void cmdOpen(char*tokens, Stream& serial) {
 }
 
 void cmdClose(char*tokens, Stream& serial) {
+  Serial.println("enter close");
+  
   verin(VERIN_IN | VERIN_ACTIVATE) ;
 
   serial.println(_OK);
 }
 
 
-void cmdHelp(char*tokens) {
-  Serial.println(F("Commands:"));
-  Serial.println(F("\t-version"));
-  
-  Serial.println(F("\t-offset"));
-  
-  Serial.println(F("\t-door state"));
-  Serial.println(F("\t\t*state 0: close"));
-  Serial.println(F("\t\t*state 1: open"));
-  
-  Serial.println(F("\t-close"));
+void cmdHelp(char*tokens, Stream& serial) {  
+  serial.println(F("Commands:"));
+  serial.println(F("\t-version"));
+  serial.println(F("\t-date [YY MM DD hh mm ss]"));
+  serial.println(F("\t\t*no args: returns current date and time"));
+  serial.println(F("\t\t*with args: sets clock to given date and time"));
 
-  Serial.println(F("\t-open"));
-  Serial.println(F("\t-help"));
+  serial.println(F("\t-sunset"));
+  serial.println(F("\t-offset [x]"));
+  serial.println(F("\t\t*no arg: returns current offset"));
+  serial.println(F("\t\t*with arg: set offset to x"));
+  
+  serial.println(F("\t-door state"));
+  serial.println(F("\t\t*state 0: close"));
+  serial.println(F("\t\t*state 1: open"));
+  
+  serial.println(F("\t-open"));
+  serial.println(F("\t-close"));
+
+  serial.println(F("\t-help"));
+
 }
-
-#if 0 /*
-void init_cli(CommandLine &cli) {
-
-  cli.add("version",  &cmdVersion);
-  cli.add("sunset",   &cmdSunset);
-  cli.add("offset",   &cmdOffset);
-  cli.add("date",     &cmdDate);
-  cli.add("opentime", &cmdOpenTime);
-  cli.add("door",     &cmdDoor);
-  cli.add("open",     &cmdOpen);
-  cli.add("close",    &cmdClose);
-  cli.add("help",     &cmdHelp);
-  
-} */
-#endif
-
 
 void setup_cli() {
 
@@ -378,6 +371,7 @@ void setup_cli() {
   usb_cli.add("close",    &cmdClose);
   usb_cli.add("help",     &cmdHelp);
 
+  
 #ifdef BLUETOOTH
   bt_cli.add("version",  &cmdVersion);
   bt_cli.add("sunset",   &cmdSunset);
@@ -415,8 +409,9 @@ void setup () {
   // Initialise Bluetooth and CLI interfaces
   setup_cli();  
   
-
+#ifdef RTC_ENABLED
   setup_RTC();
+#endif
   setup_verin();
 
 }
@@ -431,6 +426,7 @@ void loop () {
   bt_cli.update();
 #endif /* BLUETOOTH */
 
+#ifdef RTC_ENABLED
     DateTime now = rtc.now();
 
     if(verin_active && (now.unixtime() > verin_timer)) {
@@ -460,6 +456,7 @@ void loop () {
         lastDayDoorClosed = now.dayOfTheWeek();
       }
     }
+#endif /* RTC_ENABLED   */
 }
 
 
