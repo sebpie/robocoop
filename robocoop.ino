@@ -4,6 +4,8 @@
 #define BLUETOOTH
 #define RTC_ENABLED
 
+
+
 /***************************************************************************************/
 /* RTC and timing declarations                                                         */
 
@@ -105,8 +107,9 @@ void verin(uint8_t bits) {
           digitalWrite(PIN_VERIN_DIR2, LOW);
       }
 
-      if((bits & VERIN_ACTIVATE) == VERIN_ACTIVATE)
+      if((bits & VERIN_ACTIVATE) == VERIN_ACTIVATE) {
           verin_activate();
+      }
       else if((bits & VERIN_STOP) == VERIN_STOP)
           verin_deactivate();
 }
@@ -146,18 +149,11 @@ void setup_verin() {
 #define BT_BAUDRATE 115200
 #endif /* BLUETOOTH */
 
-#if 0
-const char* strVersion = "0.1";
-const char* _OK = "OK ";
-const char* _ERR = "ERROR ";
-const char* _NOT_IMPLEMENTED = "NOT IMPLEMENTED";
-#else
-#define strVersion        F("0.2-dev")
+#define strVersion        F("0.3-dev")
 #define _OK               F("OK")
 #define _ERR              F("ERROR")
 #define _NOT_IMPLEMENTED  F("NOT IMPLEMENTED")
 #define _BAD_PARAMS       F("ERROR: BAD PARAMETERS") 
-#endif
 
 char buffer[100];
 
@@ -331,7 +327,7 @@ void cmdDate(char*tokens, Stream& serial) {
 
 void cmdOpen(char*tokens, Stream& serial) {
   verin(VERIN_OUT | VERIN_ACTIVATE );
-
+  
   serial.println(_OK);
 }
 
