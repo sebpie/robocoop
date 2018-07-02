@@ -1,9 +1,8 @@
 #include "pins.h"
 
 #define DEBUG(x)  Serial.println(x)
-#define BLUETOOTH
+//#define BLUETOOTH
 #define RTC_ENABLED
-
 
 
 /***************************************************************************************/
@@ -22,10 +21,6 @@ RTC_DS1307 rtc;
 char *daysOfTheWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 uint8_t lastDayDoorOpened = -1;
 uint8_t lastDayDoorClosed = -1;
-
-
-#define LOG_SIZE  10
-DateTime log_verin[LOG_SIZE];
 
 
 // Adresse dans la NVRAM du DS1307 des parametres d'heure d'ouverture et de fermeture
@@ -76,13 +71,20 @@ uint16_t dayOfTheYear(DateTime dt) {
 
 
 /***************************************************************************************/
+/* Logging of operations                                                               */
+
+#define LOG_SIZE  10
+DateTime log_verin[LOG_SIZE];
+
+
+/***************************************************************************************/
 /* Verin control declarations                                                          */
 
 //variable controle verin
 int pinIn1 = PIN_VERIN_DIR1;
 int pinIn2 = PIN_VERIN_DIR2;
 
-#define VERIN_DELAY     5000
+#define VERIN_DELAY     30000
 #define DUTYCYCLE_FULL  0xFF    /* 100% duty cycle */
 #define DUTYCYCLE_25    0x3F    /*  25% duty cycle */
 #define DUTYCYCLE_0     0x00    /*   0% duty cycle */
@@ -95,30 +97,34 @@ int pinIn2 = PIN_VERIN_DIR2;
 
 uint32_t  verin_timer = 0;
 boolean   verin_active = false;
+uint8_t   verin_dir   = VERIN_IN;
+uint8_t   verin_state = VERIN_IN;
 
 
 void verin(uint8_t bits) {
       if((bits & VERIN_IN) == VERIN_IN) {
+          verin_dir = VERIN_IN;
           digitalWrite(PIN_VERIN_DIR1, LOW);
           digitalWrite(PIN_VERIN_DIR2, HIGH);
       }
       else if((bits & VERIN_OUT) == VERIN_OUT) {
+          verin_dir = VERIN_OUT;
           digitalWrite(PIN_VERIN_DIR1, HIGH);
           digitalWrite(PIN_VERIN_DIR2, LOW);
       }
-
       if((bits & VERIN_ACTIVATE) == VERIN_ACTIVATE) {
           verin_activate();
       }
-      else if((bits & VERIN_STOP) == VERIN_STOP)
+      else if((bits & VERIN_STOP) == VERIN_STOP) {
           verin_deactivate();
+  }
 }
 
 void verin_activate() {
   analogWrite(PIN_VERIN_EN, DUTYCYCLE_FULL);
   verin_active  = true;
-  verin_timer   = rtc.now().unixtime() + VERIN_DELAY;
-
+  verin_timer   = millis() + VERIN_DELAY;
+  verin_state   = verin_dir;
   log_add();
 }
 
@@ -138,7 +144,36 @@ void setup_verin() {
 }
 
 
+/***************************************************************************************/
+/* Addition button for manual Open/Close                                                         */
 
+#define MANUAL_DOOR_COMMAND false
+
+uint8_t flag_button = false;
+unsigned long debounceDelay = 500;
+
+
+void setup_button() {
+  pinMode(PIN_BUTTON, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(PIN_BUTTON), isr_button_door, FALLING);
+}
+
+void isr_button_door() {
+  flag_button = true;
+//  Serial.println('X');
+}
+
+void process_button() {
+  if(flag_button) {
+    switch(verin_dir) {
+      case VERIN_IN:  verin(VERIN_OUT | VERIN_ACTIVATE); break;
+      case VERIN_OUT: verin(VERIN_IN  | VERIN_ACTIVATE); break;
+    }
+    flag_button = false;    
+    delay(debounceDelay);
+
+  }
+}
 
 /***************************************************************************************/
 /* Bluetooth & CLI declarations                                                        */
@@ -397,6 +432,8 @@ void setup_cli() {
   btSerial.begin(BT_BAUDRATE);
 #endif /* BLUETOOTH */
 
+
+  DEBUG(F("CLI ready"));
 }
 
 
@@ -416,35 +453,57 @@ void setup () {
 #endif
 
   Serial.begin(115200);
+  DEBUG(F("Booting..."));
 
+
+  DEBUG(F("Setup LOG"));
+  setup_log();
+  DEBUG(F("...done"));
 
   // Initialise Bluetooth and CLI interfaces
-  setup_cli();  
+  DEBUG(F("Setup CLI"));
+  setup_cli();
+  DEBUG(F("...done"));
   
 #ifdef RTC_ENABLED
+  DEBUG(F("Setup RTC");
   setup_RTC();
+  DEBUG(F("... done");
 #endif
+
+  DEBUG(F("Setup Verin"));
   setup_verin();
+  DEBUG(F("...done"));
 
-  setup_log();
+  
+#if MANUAL_DOOR_COMMAND
+  DEBUG(F("Setup button"));
+  setup_button();
+  DEBUG(F("Done"));
+#endif
 
+  DEBUG(F("Robocoop setup - done."));
 }
 
 void setup_log() {
   for(int i=0; i < LOG_SIZE; i++) {
     log_add();
   }
+  DEBUG(F("LOG ready"));
 }
 
 void log_add() {
+#if RTC_ENABLED
     DateTime now = rtc.now();
+#else
+    DateTime now = NULL;
+#endif
 /*    log_entry_t l;
     l.action = a;
     l.dt = now;
 */
     log_shift();
     log_verin[0] = now;
-    
 }
 
 void log_shift() {
@@ -463,10 +522,14 @@ void loop () {
   bt_cli.update();
 #endif /* BLUETOOTH */
 
+#if MANUAL_DOOR_COMMAND
+  process_button();
+#endif
+
 #ifdef RTC_ENABLED
     DateTime now = rtc.now();
 
-    if(verin_active && (now.unixtime() > verin_timer)) {
+    if(verin_active && (millis() > verin_timer)) {
       verin_deactivate();
     }
 

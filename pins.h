@@ -8,5 +8,6 @@
 #define PIN_BT_RX      10
 #define PIN_BT_TX      11
 
+#define PIN_BUTTON      2
 
 #endif
