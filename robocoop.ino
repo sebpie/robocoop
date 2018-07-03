@@ -184,7 +184,7 @@ void process_button() {
 #define BT_BAUDRATE 115200
 #endif /* BLUETOOTH */
 
-#define strVersion        F("0.3-dev")
+#define strVersion        F("0.3")
 #define _OK               F("OK")
 #define _ERR              F("ERROR")
 #define _NOT_IMPLEMENTED  F("NOT IMPLEMENTED")
@@ -466,9 +466,9 @@ void setup () {
   DEBUG(F("...done"));
   
 #ifdef RTC_ENABLED
-  DEBUG(F("Setup RTC");
+  DEBUG(F("Setup RTC"));
   setup_RTC();
-  DEBUG(F("... done");
+  DEBUG(F("... done"));
 #endif
 
   DEBUG(F("Setup Verin"));
@@ -487,21 +487,16 @@ void setup () {
 
 void setup_log() {
   for(int i=0; i < LOG_SIZE; i++) {
-    log_add();
+    log_verin[i] = NULL;
   }
-  DEBUG(F("LOG ready"));
 }
 
 void log_add() {
-#if RTC_ENABLED
+//#ifdef RTC_ENABLED
     DateTime now = rtc.now();
-#else
-    DateTime now = NULL;
-#endif
-/*    log_entry_t l;
-    l.action = a;
-    l.dt = now;
-*/
+//#else
+//    DateTime now = NULL;
+//#endif
     log_shift();
     log_verin[0] = now;
 }
