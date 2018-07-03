@@ -184,7 +184,7 @@ void process_button() {
 #define BT_BAUDRATE 115200
 #endif /* BLUETOOTH */
 
-#define strVersion        F("0.3")
+#define strVersion        F("0.4-dev")
 #define _OK               F("OK")
 #define _ERR              F("ERROR")
 #define _NOT_IMPLEMENTED  F("NOT IMPLEMENTED")
